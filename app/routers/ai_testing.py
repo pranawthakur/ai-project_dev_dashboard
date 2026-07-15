@@ -15,21 +15,35 @@ class TestRequest(BaseModel):
 @router.post("/run")
 async def run_test(body: TestRequest, _=Depends(get_current_developer)):
     """
-    Proxies straight to the promptgen-backend generation endpoint (separate
-    repo) so you can test split_engine.py / progression_context.py output
+    Proxies straight to promptgen-backend's POST /generate/test (separate
+    repo), which runs ONLY the deterministic core (split_engine.py /
+    programming_rules.py) on a raw profile dict — no member auth, no LLM
+    call, no DB write. Lets you sanity-check deterministic engine output
     without going through the member questionnaire flow.
 
-    TODO: point this at your real generation route once it's confirmed —
-    e.g. f"{settings.member_app_base_url}/generate/test". Left as an
-    explicit call (not faked) so it fails loudly instead of returning
-    fabricated output if the URL/route isn't right yet.
+    Requires DEV_TEST_KEY to be set identically on both this service and
+    promptgen-backend — see both .env.example files. Left as an explicit
+    call (not faked) so it fails loudly instead of returning fabricated
+    output if the URL/key isn't right yet.
     """
     target_url = f"{settings.member_app_base_url}/generate/test"
+    if not settings.dev_test_key:
+        raise HTTPException(
+            status_code=503,
+            detail="DEV_TEST_KEY is not set on this deployment — set it to match "
+                   "promptgen-backend's DEV_TEST_KEY before using AI Engine Test.",
+        )
     try:
         async with httpx.AsyncClient(timeout=30) as client:
-            res = await client.post(target_url, json=body.profile)
+            res = await client.post(
+                target_url,
+                json=body.profile,
+                headers={"X-Dev-Test-Key": settings.dev_test_key},
+            )
         res.raise_for_status()
         return res.json()
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(
             status_code=502,

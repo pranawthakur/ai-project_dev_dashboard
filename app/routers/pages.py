@@ -22,7 +22,12 @@ templates = Jinja2Templates(directory=str(TEMPLATES_DIR))
 
 
 def render_index(request: Request):
-    return templates.TemplateResponse("index.html", {"request": request})
+    # NOTE: newer Starlette moved `request` to the first positional arg and
+    # dropped the old TemplateResponse("name", {"request": request}) form.
+    # Calling the old way on a new Starlette version passes the context dict
+    # in as the template *name*, which crashes deep in Jinja2 with
+    # "TypeError: unhashable type: 'dict'" — this is that fix.
+    return templates.TemplateResponse(request, "index.html")
 
 
 @router.get("/", response_class=HTMLResponse)

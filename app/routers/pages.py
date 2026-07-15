@@ -9,48 +9,62 @@ router = APIRouter(tags=["pages"])
 TEMPLATES_DIR = Path(__file__).parent.parent / "templates"
 templates = Jinja2Templates(directory=str(TEMPLATES_DIR))
 
-# NOTE: pages are plain server-rendered HTML. Auth is enforced client-side
-# (nav.js redirects to /login if no token) AND server-side on every /api/*
-# call via get_current_developer. A page loading without a valid token just
-# shows empty tables until redirected — no sensitive data ever renders
-# server-side into these templates.
+# ── ONE FILE, ALL PAGES ──────────────────────────────────────────
+# index.html contains all 8 views (login + dashboard + gyms + gym
+# detail + onboarding + admins + links + ai-testing) as hidden/shown
+# <div class="view"> blocks. Routing between them happens client-side
+# via the URL hash (#dashboard, #gyms, #gyms/<id>, etc.) — see the
+# <script> at the bottom of index.html.
+#
+# Every server route below just serves the same file so a direct link
+# like /gyms or a page refresh still lands correctly; the JS reads
+# window.location.hash on load to show the right view.
+
+
+def render_index(request: Request):
+    return templates.TemplateResponse("index.html", {"request": request})
+
+
+@router.get("/", response_class=HTMLResponse)
+def root(request: Request):
+    return render_index(request)
 
 
 @router.get("/login", response_class=HTMLResponse)
 def login_page(request: Request):
-    return templates.TemplateResponse("login.html", {"request": request})
+    return render_index(request)
 
 
 @router.get("/dashboard", response_class=HTMLResponse)
 def dashboard_page(request: Request):
-    return templates.TemplateResponse("dashboard.html", {"request": request})
+    return render_index(request)
 
 
 @router.get("/gyms", response_class=HTMLResponse)
 def gyms_page(request: Request):
-    return templates.TemplateResponse("gyms.html", {"request": request})
+    return render_index(request)
 
 
 @router.get("/gyms/{gym_id}", response_class=HTMLResponse)
 def gym_detail_page(request: Request, gym_id: str):
-    return templates.TemplateResponse("gym_detail.html", {"request": request, "gym_id": gym_id})
+    return render_index(request)
 
 
 @router.get("/onboarding", response_class=HTMLResponse)
 def onboarding_page(request: Request):
-    return templates.TemplateResponse("onboarding.html", {"request": request})
+    return render_index(request)
 
 
 @router.get("/admins", response_class=HTMLResponse)
 def admins_page(request: Request):
-    return templates.TemplateResponse("admins.html", {"request": request})
+    return render_index(request)
 
 
 @router.get("/links", response_class=HTMLResponse)
 def links_page(request: Request):
-    return templates.TemplateResponse("links.html", {"request": request})
+    return render_index(request)
 
 
 @router.get("/ai-testing", response_class=HTMLResponse)
 def ai_testing_page(request: Request):
-    return templates.TemplateResponse("ai_testing.html", {"request": request})
+    return render_index(request)

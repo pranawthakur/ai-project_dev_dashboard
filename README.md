@@ -4,15 +4,20 @@ Internal dev/superadmin dashboard. Separate repo, same Supabase project as
 `admin-dashboard-backend`.
 
 ## Pages
-- `/login` — developer login
-- `/dashboard` — real-numbers analytics (gyms, members, revenue)
-- `/gyms` — list + activate/suspend
-- `/gyms/{id}` — single gym detail: members, payments, Excel export
-- `/onboarding` — full gym onboarding form (creates gym + first admin together)
-- `/admins` — all gym admins, reset password, enable/disable
-- `/links` — generate a member access link for any gym, pointing at the
+All 8 "pages" live in **one file**: `app/templates/index.html`. Every
+server route (`/login`, `/dashboard`, `/gyms`, etc.) serves that same
+file; switching between views happens client-side via the URL hash
+(`#dashboard`, `#gyms`, `#gyms/<id>`, `#onboarding`, `#admins`, `#links`,
+`#ai_testing`) so links, refresh, and back/forward still work.
+
+- `#dashboard` — real-numbers analytics (gyms, members, revenue)
+- `#gyms` — list + activate/suspend
+- `#gyms/<id>` — single gym detail: members, payments, Excel export
+- `#onboarding` — full gym onboarding form (creates gym + first admin together)
+- `#admins` — all gym admins, reset password, enable/disable
+- `#links` — generate a member access link for any gym, pointing at the
   separate member-facing app (`promptgen-backend` repo)
-- `/ai-testing` — send a raw profile straight to the generation engine
+- `#ai_testing` — send a raw profile straight to the generation engine
 
 ## Setup
 ```

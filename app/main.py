@@ -1,7 +1,4 @@
-from pathlib import Path
-
 from fastapi import FastAPI
-from fastapi.staticfiles import StaticFiles
 from starlette.middleware.cors import CORSMiddleware
 
 from app.routers import pages, auth, gyms, onboarding, admins, analytics, links, ai_testing
@@ -15,8 +12,8 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-STATIC_DIR = Path(__file__).parent / "static"
-app.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static")
+# No /static mount — every template is self-contained (CSS + JS inline
+# in the <head>/<body>), same pattern as the other repos' dashboard.html.
 
 # ── Mounted routers ──────────────────────────────────────────────
 # Each one is a self-contained file. To add a new capability later

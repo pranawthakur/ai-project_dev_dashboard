@@ -2,13 +2,18 @@ from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 
 from app.core.db import supabase
-from app.core.security import verify_password
+from app.core.security import verify_password, hash_password
 from app.core.auth import create_token
 
 router = APIRouter(prefix="/api/auth", tags=["auth"])
 
 
 class LoginRequest(BaseModel):
+    email: str
+    password: str
+
+
+class SignupRequest(BaseModel):
     email: str
     password: str
 
@@ -27,3 +32,33 @@ def login(body: LoginRequest):
 
     token = create_token(sub=admin["id"], role="developer")
     return {"access_token": token}
+
+
+# TEMPORARY: open developer signup. There's no invite/approval flow yet, so
+# anyone who finds /signup can create a role='developer' account, which has
+# full access to every gym's data. Remove or gate this before this app is
+# anything but you testing solo.
+@router.post("/signup")
+def signup(body: SignupRequest):
+    existing = supabase.table("admins").select("id").eq("email", body.email).execute()
+    if existing.data:
+        raise HTTPException(status_code=409, detail="An account with this email already exists.")
+
+    password_hash = hash_password(body.password)
+    result = (
+        supabase.table("admins")
+        .insert({
+            "email": body.email,
+            "password_hash": password_hash,
+            "role": "developer",
+            "disabled": False,
+        })
+        .execute()
+    )
+    if not result.data:
+        raise HTTPException(status_code=500, detail="Could not create account.")
+
+    admin = result.data[0]
+    token = create_token(sub=admin["id"], role="developer")
+    return {"access_token": token}
+

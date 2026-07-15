@@ -113,16 +113,24 @@ tr:hover td { background:rgba(139,92,246,.04); }
     <div class="logo" style="justify-content:center; margin-bottom:18px;">
       <div class="logo-icon">GC</div>
     </div>
-    <h1 style="text-align:center; font-size:1.4rem;">Dev Console</h1>
+    <h1 style="text-align:center; font-size:1.4rem;" id="authTitle">Dev Console</h1>
     <p class="page-sub" style="text-align:center;">GymCoach Studio — internal access only</p>
     <form id="loginForm">
       <label>Email</label>
       <input type="email" id="loginEmail" required autocomplete="username" />
       <label>Password</label>
       <input type="password" id="loginPassword" required autocomplete="current-password" />
-      <button class="btn" type="submit" style="width:100%; justify-content:center; margin-top:20px;">Log in</button>
+      <button class="btn" type="submit" style="width:100%; justify-content:center; margin-top:20px;" id="authSubmitBtn">Log in</button>
     </form>
     <p id="loginErr" style="color:var(--danger); font-size:13px; margin-top:12px; display:none;"></p>
+    <p style="text-align:center; font-size:13px; margin-top:16px;">
+      <span id="authToggleLabel">No account yet?</span>
+      <a href="#" id="authToggleLink" style="color:var(--accent);">Sign up</a>
+    </p>
+    <!-- TEMPORARY: self-serve signup, just for solo testing. Remove this
+         toggle (and the /api/auth/signup route) once this app has more
+         than one intended user — any email/password combo becomes a
+         full developer account with access to every gym's data. -->
   </div>
 </div>
 
@@ -396,12 +404,27 @@ function showApp() {
   route();
 }
 
+// TEMPORARY: signup/login toggle, just for solo testing while there's
+// no invite flow. Remove alongside /api/auth/signup later.
+let authMode = "login"; // "login" | "signup"
+
+document.getElementById("authToggleLink").addEventListener("click", (e) => {
+  e.preventDefault();
+  authMode = authMode === "login" ? "signup" : "login";
+  document.getElementById("authTitle").textContent = authMode === "login" ? "Dev Console" : "Create developer account";
+  document.getElementById("authSubmitBtn").textContent = authMode === "login" ? "Log in" : "Sign up";
+  document.getElementById("authToggleLabel").textContent = authMode === "login" ? "No account yet?" : "Already have an account?";
+  document.getElementById("authToggleLink").textContent = authMode === "login" ? "Sign up" : "Log in";
+  document.getElementById("loginErr").style.display = "none";
+});
+
 document.getElementById("loginForm").addEventListener("submit", async (e) => {
   e.preventDefault();
   const errEl = document.getElementById("loginErr");
   errEl.style.display = "none";
+  const endpoint = authMode === "login" ? "/api/auth/login" : "/api/auth/signup";
   try {
-    const res = await fetch("/api/auth/login", {
+    const res = await fetch(endpoint, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -410,7 +433,7 @@ document.getElementById("loginForm").addEventListener("submit", async (e) => {
       }),
     });
     const data = await res.json();
-    if (!res.ok) throw new Error(data.detail || "Login failed");
+    if (!res.ok) throw new Error(data.detail || (authMode === "login" ? "Login failed" : "Signup failed"));
     localStorage.setItem("dev_token", data.access_token);
     window.location.hash = "#dashboard";
     showApp();

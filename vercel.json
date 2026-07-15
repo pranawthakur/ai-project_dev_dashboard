@@ -1,0 +1,8 @@
+{
+  "rewrites": [
+    {
+      "source": "/(.*)",
+      "destination": "https://ai-project-dev-dashboard.onrender.com/$1"
+    }
+  ]
+}

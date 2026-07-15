@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+{% set page_title = "Admins" %}
+{% include "_head.html" %}
+</head>
+<body>
+{% set active_page = "admins" %}
+{% include "_navbar.html" %}
+
+<h1>Gym Admins</h1>
+<p class="page-sub">All admin accounts across every gym.</p>
+
+<div class="card">
+  <table>
+    <thead><tr><th>Email</th><th>Gym</th><th>Role</th><th>Status</th><th>Actions</th></tr></thead>
+    <tbody id="adminsBody"><tr><td colspan="5" style="color:var(--muted)">Loading…</td></tr></tbody>
+  </table>
+</div>
+
+{% include "_footer.html" %}
+<script>
+async function loadAdmins() {
+  const admins = await DevAPI.get("/api/admins");
+  const body = document.getElementById("adminsBody");
+  body.innerHTML = "";
+  if (!admins.length) {
+    body.innerHTML = `<tr><td colspan="5" style="color:var(--muted)">No admins yet.</td></tr>`;
+    return;
+  }
+  admins.forEach(a => {
+    body.innerHTML += `<tr>
+      <td>${a.email}</td>
+      <td>${a.gym_name || "—"}</td>
+      <td>${a.role}</td>
+      <td><span class="badge ${a.disabled ? 'suspended' : 'active'}">${a.disabled ? 'Disabled' : 'Active'}</span></td>
+      <td>
+        <button class="btn secondary" style="padding:6px 12px; font-size:12px;" onclick="resetPassword('${a.id}')">Reset Password</button>
+        <button class="btn secondary" style="padding:6px 12px; font-size:12px;" onclick="toggleAdmin('${a.id}', ${a.disabled})">${a.disabled ? "Enable" : "Disable"}</button>
+      </td>
+    </tr>`;
+  });
+}
+async function resetPassword(id) {
+  const newPass = prompt("New password for this admin (min 8 chars):");
+  if (!newPass || newPass.length < 8) return;
+  await DevAPI.post(`/api/admins/${id}/reset-password`, { new_password: newPass });
+  toast("Password reset");
+}
+async function toggleAdmin(id, disabled) {
+  await DevAPI.put(`/api/admins/${id}/status`, { disabled: !disabled });
+  loadAdmins();
+}
+loadAdmins();
+</script>
+</body>
+</html>

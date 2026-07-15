@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+{% set page_title = "Gym Detail" %}
+{% include "_head.html" %}
+</head>
+<body>
+{% set active_page = "gyms" %}
+{% include "_navbar.html" %}
+
+<div class="card-head" style="margin-bottom:20px;">
+  <div>
+    <h1 id="gymName" style="margin-bottom:0;">Loading…</h1>
+    <p class="page-sub" style="margin-bottom:0;" id="gymMeta"></p>
+  </div>
+  <div style="display:flex; gap:10px;">
+    <a class="btn secondary" href="/links?gym={{ gym_id }}">Get Access Link</a>
+    <a class="btn" href="/api/gyms/{{ gym_id }}/export">⬇ Export Excel</a>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-head"><h3>Members</h3></div>
+  <table>
+    <thead><tr><th>Name</th><th>Phone</th><th>Login Code</th><th>Membership</th><th>Payment</th><th>Expiry</th></tr></thead>
+    <tbody id="membersBody"><tr><td colspan="6" style="color:var(--muted)">Loading…</td></tr></tbody>
+  </table>
+</div>
+
+<div class="card">
+  <div class="card-head"><h3>Payment History</h3></div>
+  <table>
+    <thead><tr><th>Member</th><th>Amount</th><th>Plan</th><th>Method</th><th>Date</th></tr></thead>
+    <tbody id="paymentsBody"><tr><td colspan="5" style="color:var(--muted)">Loading…</td></tr></tbody>
+  </table>
+</div>
+
+{% include "_footer.html" %}
+<script>
+const GYM_ID = "{{ gym_id }}";
+
+async function loadGymDetail() {
+  const data = await DevAPI.get(`/api/gyms/${GYM_ID}`);
+  document.getElementById("gymName").textContent = data.gym.name;
+  document.getElementById("gymMeta").textContent = `${data.gym.city || "—"} · ${data.gym.owner_email || "—"} · ${data.gym.status}`;
+
+  const mBody = document.getElementById("membersBody");
+  mBody.innerHTML = "";
+  (data.members || []).forEach(m => {
+    mBody.innerHTML += `<tr>
+      <td>${m.name}</td><td>${m.phone || "—"}</td>
+      <td style="font-family:monospace;">${m.login_code}</td>
+      <td><span class="badge ${m.membership_status === 'Active' ? 'active' : 'suspended'}">${m.membership_status}</span></td>
+      <td>${m.current_month_payment_status}</td>
+      <td>${m.expiry_date || "—"}</td>
+    </tr>`;
+  });
+  if (!data.members || !data.members.length) {
+    mBody.innerHTML = `<tr><td colspan="6" style="color:var(--muted)">No members yet.</td></tr>`;
+  }
+
+  const pBody = document.getElementById("paymentsBody");
+  pBody.innerHTML = "";
+  (data.payments || []).forEach(p => {
+    pBody.innerHTML += `<tr>
+      <td>${p.member_name || "—"}</td><td>₹${p.amount}</td><td>${p.plan}</td>
+      <td>${p.payment_method}</td><td>${new Date(p.created_at).toLocaleDateString()}</td>
+    </tr>`;
+  });
+  if (!data.payments || !data.payments.length) {
+    pBody.innerHTML = `<tr><td colspan="5" style="color:var(--muted)">No payments recorded yet.</td></tr>`;
+  }
+}
+loadGymDetail();
+</script>
+</body>
+</html>

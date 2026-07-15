@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+{% set page_title = "Gyms" %}
+{% include "_head.html" %}
+</head>
+<body>
+{% set active_page = "gyms" %}
+{% include "_navbar.html" %}
+
+<div class="card-head" style="margin-bottom:20px;">
+  <div>
+    <h1 style="margin-bottom:0;">All Gyms</h1>
+    <p class="page-sub" style="margin-bottom:0;">Every gym on the platform.</p>
+  </div>
+  <a class="btn" href="/onboarding">＋ Onboard New Gym</a>
+</div>
+
+<div class="card">
+  <table>
+    <thead><tr><th>Name</th><th>City</th><th>Members</th><th>Status</th><th>Slug</th><th>Actions</th></tr></thead>
+    <tbody id="gymsBody"><tr><td colspan="6" style="color:var(--muted)">Loading…</td></tr></tbody>
+  </table>
+</div>
+
+{% include "_footer.html" %}
+<script>
+async function loadGyms() {
+  const gyms = await DevAPI.get("/api/gyms");
+  const body = document.getElementById("gymsBody");
+  body.innerHTML = "";
+  if (!gyms.length) {
+    body.innerHTML = `<tr><td colspan="6" style="color:var(--muted)">No gyms yet. <a href="/onboarding">Onboard one</a>.</td></tr>`;
+    return;
+  }
+  gyms.forEach(g => {
+    body.innerHTML += `<tr>
+      <td><a href="/gyms/${g.id}" style="color:#c4b5fd; text-decoration:none;">${g.name}</a></td>
+      <td>${g.city || "—"}</td>
+      <td>${g.member_count ?? 0}</td>
+      <td><span class="badge ${g.status}">${g.status}</span></td>
+      <td style="font-family:monospace; font-size:11.5px; color:var(--muted);">${g.slug}</td>
+      <td>
+        <button class="btn secondary" style="padding:6px 12px; font-size:12px;" onclick="toggleStatus('${g.id}', '${g.status}')">
+          ${g.status === "active" ? "Suspend" : "Activate"}
+        </button>
+      </td>
+    </tr>`;
+  });
+}
+async function toggleStatus(id, currentStatus) {
+  const newStatus = currentStatus === "active" ? "suspended" : "active";
+  await DevAPI.put(`/api/gyms/${id}/status`, { status: newStatus });
+  toast(`Gym marked ${newStatus}`);
+  loadGyms();
+}
+loadGyms();
+</script>
+</body>
+</html>

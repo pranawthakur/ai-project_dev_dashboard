@@ -1,0 +1,41 @@
+<div class="blobs"><div class="blob a"></div><div class="blob b"></div></div>
+
+<div class="topnav">
+  <div style="display:flex;align-items:center;">
+    <button class="hamburger" id="hamburger" aria-label="Toggle menu">
+      <span class="bars"><span></span><span></span><span></span></span>
+    </button>
+    <div class="logo">
+      <div class="logo-icon">GC</div>
+      GymCoach — Dev Console
+    </div>
+  </div>
+  <div class="topnav-right">
+    <button class="logout-btn" onclick="DevAPI.logout()">Log out</button>
+  </div>
+</div>
+
+<div class="layout">
+  <div class="sidebar" id="sidebar">
+    <div class="sidebar-section">
+      <div class="sec-label">Overview</div>
+      <a class="nav-item {{ 'active' if active_page == 'dashboard' }}" href="/dashboard"><span class="nav-icon">◆</span> Analytics</a>
+    </div>
+    <div class="sidebar-section">
+      <div class="sec-label">Gyms</div>
+      <a class="nav-item {{ 'active' if active_page == 'gyms' }}" href="/gyms"><span class="nav-icon">▦</span> All Gyms</a>
+      <a class="nav-item {{ 'active' if active_page == 'onboarding' }}" href="/onboarding"><span class="nav-icon">＋</span> Onboard Gym</a>
+      <a class="nav-item {{ 'active' if active_page == 'links' }}" href="/links"><span class="nav-icon">⛓</span> Access Links</a>
+    </div>
+    <div class="sidebar-section">
+      <div class="sec-label">Admins</div>
+      <a class="nav-item {{ 'active' if active_page == 'admins' }}" href="/admins"><span class="nav-icon">◐</span> Gym Admins</a>
+    </div>
+    <div class="sidebar-section">
+      <div class="sec-label">Tools</div>
+      <a class="nav-item {{ 'active' if active_page == 'ai_testing' }}" href="/ai-testing"><span class="nav-icon">✦</span> AI Engine Test</a>
+    </div>
+  </div>
+
+  <div class="main">
+    <div class="wrap">

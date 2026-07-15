@@ -421,8 +421,12 @@ document.getElementById("authToggleLink").addEventListener("click", (e) => {
 document.getElementById("loginForm").addEventListener("submit", async (e) => {
   e.preventDefault();
   const errEl = document.getElementById("loginErr");
+  const btn = document.getElementById("authSubmitBtn");
   errEl.style.display = "none";
   const endpoint = authMode === "login" ? "/api/auth/login" : "/api/auth/signup";
+  const modeAtSubmit = authMode;
+  btn.disabled = true;
+  btn.textContent = modeAtSubmit === "login" ? "Logging in…" : "Signing up…";
   try {
     const res = await fetch(endpoint, {
       method: "POST",
@@ -440,6 +444,9 @@ document.getElementById("loginForm").addEventListener("submit", async (e) => {
   } catch (err) {
     errEl.textContent = err.message;
     errEl.style.display = "block";
+  } finally {
+    btn.disabled = false;
+    btn.textContent = modeAtSubmit === "login" ? "Log in" : "Sign up";
   }
 });
 

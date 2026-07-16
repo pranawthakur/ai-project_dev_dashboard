@@ -120,6 +120,10 @@ tr:hover td { background:rgba(139,92,246,.04); }
       <input type="email" id="loginEmail" required autocomplete="username" />
       <label>Password</label>
       <input type="password" id="loginPassword" required autocomplete="current-password" />
+      <div id="signupSecretWrap" style="display:none;">
+        <label>Signup Secret</label>
+        <input type="password" id="signupSecret" autocomplete="off" />
+      </div>
       <button class="btn" type="submit" style="width:100%; justify-content:center; margin-top:20px;" id="authSubmitBtn">Log in</button>
     </form>
     <p id="loginErr" style="color:var(--danger); font-size:13px; margin-top:12px; display:none;"></p>
@@ -415,6 +419,7 @@ document.getElementById("authToggleLink").addEventListener("click", (e) => {
   document.getElementById("authSubmitBtn").textContent = authMode === "login" ? "Log in" : "Sign up";
   document.getElementById("authToggleLabel").textContent = authMode === "login" ? "No account yet?" : "Already have an account?";
   document.getElementById("authToggleLink").textContent = authMode === "login" ? "Sign up" : "Log in";
+  document.getElementById("signupSecretWrap").style.display = authMode === "signup" ? "block" : "none";
   document.getElementById("loginErr").style.display = "none";
 });
 
@@ -434,6 +439,7 @@ document.getElementById("loginForm").addEventListener("submit", async (e) => {
       body: JSON.stringify({
         email: document.getElementById("loginEmail").value,
         password: document.getElementById("loginPassword").value,
+        ...(modeAtSubmit === "signup" ? { signup_secret: document.getElementById("signupSecret").value } : {}),
       }),
     });
     const data = await res.json();

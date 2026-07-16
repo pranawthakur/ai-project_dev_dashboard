@@ -4,6 +4,7 @@ from pydantic import BaseModel
 from app.core.db import supabase
 from app.core.security import verify_password, hash_password
 from app.core.auth import create_token
+from app.core.config import settings
 
 router = APIRouter(prefix="/api/auth", tags=["auth"])
 
@@ -16,6 +17,7 @@ class LoginRequest(BaseModel):
 class SignupRequest(BaseModel):
     email: str
     password: str
+    signup_secret: str
 
 
 @router.post("/login")
@@ -34,12 +36,13 @@ def login(body: LoginRequest):
     return {"access_token": token}
 
 
-# TEMPORARY: open developer signup. There's no invite/approval flow yet, so
-# anyone who finds /signup can create a role='developer' account, which has
-# full access to every gym's data. Remove or gate this before this app is
-# anything but you testing solo.
+# Gated by DEV_SIGNUP_SECRET (see app/core/config.py) — unset means this
+# always 403s rather than running open.
 @router.post("/signup")
 def signup(body: SignupRequest):
+    if not settings.dev_signup_secret or body.signup_secret != settings.dev_signup_secret:
+        raise HTTPException(status_code=403, detail="Invalid signup secret.")
+
     existing = supabase.table("admins").select("id").eq("email", body.email).execute()
     if existing.data:
         raise HTTPException(status_code=409, detail="An account with this email already exists.")

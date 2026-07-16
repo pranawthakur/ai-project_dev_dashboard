@@ -21,5 +21,11 @@ class Settings:
     # 401 back from promptgen-backend (fails loudly, as intended).
     dev_test_key: str = os.getenv("DEV_TEST_KEY", "")
 
+    # Gates POST /api/auth/signup (creates role='developer' accounts with
+    # full cross-gym access). Empty default matches this project's
+    # fail-loudly pattern: unset -> signup always 403s instead of running
+    # open. Set a real value before anyone but you can reach this route.
+    dev_signup_secret: str = os.getenv("DEV_SIGNUP_SECRET", "")
+
 
 settings = Settings()

@@ -42,6 +42,11 @@ def onboard_gym(body: OnboardRequest, _=Depends(get_current_developer)):
     gym_row = {
         "name": body.gym_name,
         "slug": slug,
+        # gyms.signup_slug is NOT NULL with no default on the live table —
+        # gym-dashboard's own /admin/signup route sets this to the same
+        # value as slug; mirroring that here so this insert path doesn't
+        # 500 with a not-null violation.
+        "signup_slug": slug,
         "status": "active",
         "subscription_status": body.plan,
         "owner_name": body.owner_name,

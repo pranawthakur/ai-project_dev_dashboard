@@ -1,3 +1,7 @@
+from dotenv import load_dotenv
+
+load_dotenv()  # must run before app.core.config reads os.getenv(...)
+
 from fastapi import FastAPI
 from starlette.middleware.cors import CORSMiddleware
 

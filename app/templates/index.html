@@ -370,17 +370,23 @@ const DevAPI = {
   async get(url) {
     const r = await fetch(url, { headers: this.headers() });
     if (r.status === 401) return showLogin();
-    return r.json();
+    const data = await r.json();
+    if (!r.ok) throw new Error(data.detail || "Request failed");
+    return data;
   },
   async post(url, body) {
     const r = await fetch(url, { method: "POST", headers: this.headers(), body: JSON.stringify(body) });
     if (r.status === 401) return showLogin();
-    return r.json();
+    const data = await r.json();
+    if (!r.ok) throw new Error(data.detail || "Request failed");
+    return data;
   },
   async put(url, body) {
     const r = await fetch(url, { method: "PUT", headers: this.headers(), body: JSON.stringify(body) });
     if (r.status === 401) return showLogin();
-    return r.json();
+    const data = await r.json();
+    if (!r.ok) throw new Error(data.detail || "Request failed");
+    return data;
   },
   logout() {
     localStorage.removeItem("dev_token");

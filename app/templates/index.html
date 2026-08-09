@@ -607,7 +607,9 @@ window.addEventListener("hashchange", route);
 
 function route() {
   const hash = (window.location.hash || "#dashboard").slice(1);
-  const [page, param] = hash.split("/");
+  const slashIdx = hash.indexOf("/");
+  const page = slashIdx === -1 ? hash : hash.slice(0, slashIdx);
+  const param = slashIdx === -1 ? "" : hash.slice(slashIdx + 1);
 
   document.querySelectorAll(".view").forEach(v => v.classList.remove("active"));
   document.querySelectorAll(".nav-item").forEach(n => n.classList.remove("active"));

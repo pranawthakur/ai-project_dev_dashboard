@@ -241,8 +241,8 @@ tr:hover td { background:rgba(139,92,246,.04); }
           <div class="card">
             <div class="card-head"><h3>Payment History</h3></div>
             <table>
-              <thead><tr><th>Member</th><th>Amount</th><th>Plan</th><th>Method</th><th>Date</th></tr></thead>
-              <tbody id="paymentsBody"><tr><td colspan="5" style="color:var(--muted)">Loading…</td></tr></tbody>
+              <thead><tr><th>Member</th><th>Amount</th><th>Method</th><th>Date</th></tr></thead>
+              <tbody id="paymentsBody"><tr><td colspan="4" style="color:var(--muted)">Loading…</td></tr></tbody>
             </table>
           </div>
         </div>
@@ -659,172 +659,189 @@ function route() {
 
 // ── DATA EXPLORER — all gyms ─────────────────────────────────
 async function loadDataGyms() {
-  const gyms = await DevAPI.get("/api/data/gyms");
-  if (!gyms) return;
   const body = document.getElementById("dataGymsBody");
-  body.innerHTML = "";
-  if (!gyms.length) {
-    body.innerHTML = `<tr><td colspan="4" style="color:var(--muted)">No gyms yet.</td></tr>`;
-    return;
+  try {
+    const gyms = await DevAPI.get("/api/data/gyms");
+    if (!gyms) return;
+    body.innerHTML = "";
+    if (!gyms.length) {
+      body.innerHTML = `<tr><td colspan="4" style="color:var(--muted)">No gyms yet.</td></tr>`;
+      return;
+    }
+    gyms.forEach(g => {
+      body.innerHTML += `<tr>
+        <td><a href="#data/${g.id}" style="color:#c4b5fd; text-decoration:none;">${g.name}</a></td>
+        <td>${g.member_count ?? 0}</td>
+        <td>₹${(g.total_revenue ?? 0).toLocaleString("en-IN")}</td>
+        <td><span class="badge ${g.status}">${g.status}</span></td>
+      </tr>`;
+    });
+  } catch (err) {
+    body.innerHTML = `<tr><td colspan="4" style="color:#f87171">Failed to load: ${err.message}</td></tr>`;
   }
-  gyms.forEach(g => {
-    body.innerHTML += `<tr>
-      <td><a href="#data/${g.id}" style="color:#c4b5fd; text-decoration:none;">${g.name}</a></td>
-      <td>${g.member_count ?? 0}</td>
-      <td>₹${(g.total_revenue ?? 0).toLocaleString("en-IN")}</td>
-      <td><span class="badge ${g.status}">${g.status}</span></td>
-    </tr>`;
-  });
 }
 
 // ── DATA EXPLORER — one gym ───────────────────────────────────
 async function loadDataGym(gymId) {
-  const data = await DevAPI.get(`/api/data/gyms/${gymId}`);
-  if (!data) return;
-  document.getElementById("dataGymName").textContent = data.gym.name;
+  try {
+    const data = await DevAPI.get(`/api/data/gyms/${gymId}`);
+    if (!data) return;
+    document.getElementById("dataGymName").textContent = data.gym.name;
 
-  const mBody = document.getElementById("dataMembersBody");
-  mBody.innerHTML = "";
-  if (!data.members.length) {
-    mBody.innerHTML = `<tr><td colspan="5" style="color:var(--muted)">No members yet.</td></tr>`;
-  }
-  data.members.forEach(m => {
-    mBody.innerHTML += `<tr>
-      <td><a href="#data/${gymId}/${m.id}" style="color:#c4b5fd; text-decoration:none;">${m.name || "—"}</a></td>
-      <td>${m.phone || "—"}</td>
-      <td><span class="badge ${m.status}">${m.status || "—"}</span></td>
-      <td>${m.expiry_date || "—"}</td>
-      <td>${m.plan_count ?? 0}</td>
-    </tr>`;
-  });
+    const mBody = document.getElementById("dataMembersBody");
+    mBody.innerHTML = "";
+    if (!data.members.length) {
+      mBody.innerHTML = `<tr><td colspan="5" style="color:var(--muted)">No members yet.</td></tr>`;
+    }
+    data.members.forEach(m => {
+      mBody.innerHTML += `<tr>
+        <td><a href="#data/${gymId}/${m.id}" style="color:#c4b5fd; text-decoration:none;">${m.name || "—"}</a></td>
+        <td>${m.phone || "—"}</td>
+        <td><span class="badge ${m.status}">${m.status || "—"}</span></td>
+        <td>${m.expiry_date || "—"}</td>
+        <td>${m.plan_count ?? 0}</td>
+      </tr>`;
+    });
 
-  const pBody = document.getElementById("dataPaymentsBody");
-  pBody.innerHTML = "";
-  if (!data.payments.length) {
-    pBody.innerHTML = `<tr><td colspan="4" style="color:var(--muted)">No payments yet.</td></tr>`;
-  }
-  data.payments.forEach(p => {
-    pBody.innerHTML += `<tr>
-      <td>${p.member_name || "—"}</td>
-      <td>₹${(parseFloat(p.amount) || 0).toLocaleString("en-IN")}</td>
-      <td>${p.method || "—"}</td>
-      <td>${p.created_at ? new Date(p.created_at).toLocaleDateString() : "—"}</td>
-    </tr>`;
-  });
+    const pBody = document.getElementById("dataPaymentsBody");
+    pBody.innerHTML = "";
+    if (!data.payments.length) {
+      pBody.innerHTML = `<tr><td colspan="4" style="color:var(--muted)">No payments yet.</td></tr>`;
+    }
+    data.payments.forEach(p => {
+      pBody.innerHTML += `<tr>
+        <td>${p.member_name || "—"}</td>
+        <td>₹${(parseFloat(p.amount) || 0).toLocaleString("en-IN")}</td>
+        <td>${p.method || "—"}</td>
+        <td>${p.created_at ? new Date(p.created_at).toLocaleDateString() : "—"}</td>
+      </tr>`;
+    });
 
-  // Expenses columns aren't known ahead of time (this dashboard doesn't
-  // otherwise touch that table) — render whatever keys actually come back.
-  const eHead = document.getElementById("dataExpensesHead");
-  const eBody = document.getElementById("dataExpensesBody");
-  if (!data.expenses.length) {
-    eHead.innerHTML = `<tr><th style="color:var(--muted)">No expenses on file</th></tr>`;
-    eBody.innerHTML = "";
-  } else {
-    const cols = Object.keys(data.expenses[0]).filter(k => k !== "id" && k !== "gym_id");
-    eHead.innerHTML = "<tr>" + cols.map(c => `<th>${c.replace(/_/g, " ")}</th>`).join("") + "</tr>";
-    eBody.innerHTML = data.expenses.map(row =>
-      "<tr>" + cols.map(c => `<td>${row[c] ?? "—"}</td>`).join("") + "</tr>"
-    ).join("");
+    // Expenses columns aren't known ahead of time (this dashboard doesn't
+    // otherwise touch that table) — render whatever keys actually come back.
+    const eHead = document.getElementById("dataExpensesHead");
+    const eBody = document.getElementById("dataExpensesBody");
+    if (!data.expenses.length) {
+      eHead.innerHTML = `<tr><th style="color:var(--muted)">No expenses on file</th></tr>`;
+      eBody.innerHTML = "";
+    } else {
+      const cols = Object.keys(data.expenses[0]).filter(k => k !== "id" && k !== "gym_id");
+      eHead.innerHTML = "<tr>" + cols.map(c => `<th>${c.replace(/_/g, " ")}</th>`).join("") + "</tr>";
+      eBody.innerHTML = data.expenses.map(row =>
+        "<tr>" + cols.map(c => `<td>${row[c] ?? "—"}</td>`).join("") + "</tr>"
+      ).join("");
+    }
+  } catch (err) {
+    document.getElementById("dataGymName").textContent = "Failed to load";
+    document.getElementById("dataMembersBody").innerHTML = `<tr><td colspan="5" style="color:#f87171">${err.message}</td></tr>`;
   }
 }
 
 // ── DATA EXPLORER — one member ────────────────────────────────
 async function loadDataMember(memberId) {
-  const data = await DevAPI.get(`/api/data/members/${memberId}`);
-  if (!data) return;
-  const m = data.member;
-  document.getElementById("dataMemberName").textContent = m.name || "Member";
-  document.getElementById("dataMemberMeta").textContent =
-    `${m.phone || "—"} · login code ${m.login_code || "—"} · ${m.status || "—"}`;
-
-  const profileEl = document.getElementById("dataMemberProfile");
-  const skip = new Set(["id", "gym_id", "name", "login_code", "status"]);
-  const entries = Object.entries(m).filter(([k]) => !skip.has(k));
-  profileEl.innerHTML = entries.length
-    ? `<table><tbody>${entries.map(([k, v]) =>
-        `<tr><td style="color:var(--muted); width:220px;">${k.replace(/_/g, " ")}</td><td>${v ?? "—"}</td></tr>`
-      ).join("")}</tbody></table>`
-    : "No additional profile fields on this member row.";
-
   const listEl = document.getElementById("dataPlansList");
-  if (!data.plans.length) {
-    listEl.innerHTML = `<p style="color:var(--muted)">No plans generated yet.</p>`;
-    return;
-  }
-  const gymId = window.location.hash.split("/")[1];
+  try {
+    const data = await DevAPI.get(`/api/data/members/${memberId}`);
+    if (!data) return;
+    const m = data.member;
+    document.getElementById("dataMemberName").textContent = m.name || "Member";
+    document.getElementById("dataMemberMeta").textContent =
+      `${m.phone || "—"} · login code ${m.login_code || "—"} · ${m.status || "—"}`;
 
-  function renderIntakeTable(intake) {
-    const entries = Object.entries(intake || {});
-    if (!entries.length) return `<p style="color:var(--muted); margin:0;">No intake snapshot stored for this cycle.</p>`;
-    return `<table><tbody>${entries.map(([k, v]) =>
-      `<tr><td style="color:var(--muted); width:200px;">${k.replace(/_/g, " ")}</td><td>${v ?? "—"}</td></tr>`
-    ).join("")}</tbody></table>`;
-  }
+    const profileEl = document.getElementById("dataMemberProfile");
+    const skip = new Set(["id", "gym_id", "name", "login_code", "status"]);
+    const entries = Object.entries(m).filter(([k]) => !skip.has(k));
+    profileEl.innerHTML = entries.length
+      ? `<table><tbody>${entries.map(([k, v]) =>
+          `<tr><td style="color:var(--muted); width:220px;">${k.replace(/_/g, " ")}</td><td>${v ?? "—"}</td></tr>`
+        ).join("")}</tbody></table>`
+      : "No additional profile fields on this member row.";
 
-  function renderWeekTable(days, label) {
-    const withExercises = (days || []).filter(d => !d.is_rest && d.exercises && d.exercises.length);
-    if (!withExercises.length) {
-      return `<p style="color:var(--muted); margin:4px 0 14px;">${label}: no training days recorded.</p>`;
+    if (!data.plans.length) {
+      listEl.innerHTML = `<p style="color:var(--muted)">No plans generated yet.</p>`;
+      return;
     }
-    return `
-      <div style="margin:10px 0 4px; font-weight:600; color:var(--fg);">${label}</div>
-      ${withExercises.map(d => `
-        <table style="margin-bottom:10px;">
-          <thead><tr><th colspan="4">${d.name || d.short || "Day"}${d.type ? " — " + d.type : ""}</th></tr>
-          <tr><th>Exercise</th><th>Muscle</th><th>Sets</th><th>Reps</th></tr></thead>
-          <tbody>
-            ${d.exercises.map(ex => `<tr>
-              <td>${ex.name || "—"}</td>
-              <td>${ex.muscle || "—"}</td>
-              <td>${ex.sets ?? "—"}</td>
-              <td>${ex.reps ?? "—"}</td>
-            </tr>`).join("")}
-          </tbody>
-        </table>
-      `).join("")}
-    `;
-  }
+    const gymId = window.location.hash.split("/")[1];
 
-  listEl.innerHTML = data.plans.map(p => `
-    <div style="border:1px solid var(--border); border-radius:10px; padding:16px; margin-bottom:16px;">
-      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
-        <div>
-          <strong>Cycle ${p.cycle_number ?? "—"}</strong>
-          <span class="badge ${p.status}" style="margin-left:8px;">${p.status || "—"}</span>
+    function renderIntakeTable(intake) {
+      const entries = Object.entries(intake || {});
+      if (!entries.length) return `<p style="color:var(--muted); margin:0;">No intake snapshot stored for this cycle.</p>`;
+      return `<table><tbody>${entries.map(([k, v]) =>
+        `<tr><td style="color:var(--muted); width:200px;">${k.replace(/_/g, " ")}</td><td>${v ?? "—"}</td></tr>`
+      ).join("")}</tbody></table>`;
+    }
+
+    function renderWeekTable(days, label) {
+      const withExercises = (days || []).filter(d => !d.is_rest && d.exercises && d.exercises.length);
+      if (!withExercises.length) {
+        return `<p style="color:var(--muted); margin:4px 0 14px;">${label}: no training days recorded.</p>`;
+      }
+      return `
+        <div style="margin:10px 0 4px; font-weight:600; color:var(--fg);">${label}</div>
+        ${withExercises.map(d => `
+          <table style="margin-bottom:10px;">
+            <thead><tr><th colspan="4">${d.name || d.short || "Day"}${d.type ? " — " + d.type : ""}</th></tr>
+            <tr><th>Exercise</th><th>Muscle</th><th>Sets</th><th>Reps</th></tr></thead>
+            <tbody>
+              ${d.exercises.map(ex => `<tr>
+                <td>${ex.name || "—"}</td>
+                <td>${ex.muscle || "—"}</td>
+                <td>${ex.sets ?? "—"}</td>
+                <td>${ex.reps ?? "—"}</td>
+              </tr>`).join("")}
+            </tbody>
+          </table>
+        `).join("")}
+      `;
+    }
+
+    listEl.innerHTML = data.plans.map(p => `
+      <div style="border:1px solid var(--border); border-radius:10px; padding:16px; margin-bottom:16px;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+          <div>
+            <strong>Cycle ${p.cycle_number ?? "—"}</strong>
+            <span class="badge ${p.status}" style="margin-left:8px;">${p.status || "—"}</span>
+          </div>
+          <div style="color:var(--muted); font-size:12.5px;">
+            Generated ${p.created_at ? new Date(p.created_at).toLocaleString() : "—"}
+            · <a href="#data/${gymId}/${memberId}/${p.id}" style="color:#c4b5fd; text-decoration:none;">View polished plan →</a>
+          </div>
         </div>
-        <div style="color:var(--muted); font-size:12.5px;">
-          Generated ${p.created_at ? new Date(p.created_at).toLocaleString() : "—"}
-          · <a href="#data/${gymId}/${memberId}/${p.id}" style="color:#c4b5fd; text-decoration:none;">View polished plan →</a>
+        <details>
+          <summary style="cursor:pointer; color:var(--muted); font-size:13px;">Intake form for this cycle</summary>
+          <div style="margin-top:8px;">${renderIntakeTable(p.intake)}</div>
+        </details>
+        <div style="margin-top:12px;">
+          ${renderWeekTable(p.week1_days, "Week 1")}
+          ${renderWeekTable(p.week2_days, "Week 2")}
         </div>
       </div>
-      <details>
-        <summary style="cursor:pointer; color:var(--muted); font-size:13px;">Intake form for this cycle</summary>
-        <div style="margin-top:8px;">${renderIntakeTable(p.intake)}</div>
-      </details>
-      <div style="margin-top:12px;">
-        ${renderWeekTable(p.week1_days, "Week 1")}
-        ${renderWeekTable(p.week2_days, "Week 2")}
-      </div>
-    </div>
-  `).join("");
+    `).join("");
+  } catch (err) {
+    listEl.innerHTML = `<p style="color:#f87171">Failed to load: ${err.message}</p>`;
+  }
 }
 
 // ── DATA EXPLORER — one plan ──────────────────────────────────
 async function loadDataPlan(planId) {
-  const data = await DevAPI.get(`/api/data/plans/${planId}`);
-  if (!data) return;
-  document.getElementById("dataPlanCycle").textContent = data.cycle_number ?? "—";
+  try {
+    const data = await DevAPI.get(`/api/data/plans/${planId}`);
+    if (!data) return;
+    document.getElementById("dataPlanCycle").textContent = data.cycle_number ?? "—";
 
-  const intakeEl = document.getElementById("dataPlanIntake");
-  const entries = Object.entries(data.intake || {});
-  intakeEl.innerHTML = entries.length
-    ? `<table><tbody>${entries.map(([k, v]) =>
-        `<tr><td style="color:var(--muted); width:220px;">${k.replace(/_/g, " ")}</td><td>${v ?? "—"}</td></tr>`
-      ).join("")}</tbody></table>`
-    : "No intake snapshot stored on this plan.";
+    const intakeEl = document.getElementById("dataPlanIntake");
+    const entries = Object.entries(data.intake || {});
+    intakeEl.innerHTML = entries.length
+      ? `<table><tbody>${entries.map(([k, v]) =>
+          `<tr><td style="color:var(--muted); width:220px;">${k.replace(/_/g, " ")}</td><td>${v ?? "—"}</td></tr>`
+        ).join("")}</tbody></table>`
+      : "No intake snapshot stored on this plan.";
 
-  const frame = document.getElementById("dataPlanFrame");
-  frame.srcdoc = data.rendered_html || "<p style='color:#888;font-family:sans-serif;padding:20px;'>No rendered HTML stored for this plan.</p>";
+    const frame = document.getElementById("dataPlanFrame");
+    frame.srcdoc = data.rendered_html || "<p style='color:#888;font-family:sans-serif;padding:20px;'>No rendered HTML stored for this plan.</p>";
+  } catch (err) {
+    document.getElementById("dataPlanIntake").innerHTML = `<span style="color:#f87171">Failed to load: ${err.message}</span>`;
+  }
 }
 
 // ── DASHBOARD ────────────────────────────────────────────────
@@ -886,17 +903,51 @@ async function loadGymDetail(gymId) {
   if (!data) return;
   document.getElementById("gymName").textContent = data.gym.name;
   document.getElementById("gymMeta").textContent = `${data.gym.city || "—"} · ${data.gym.owner_email || "—"} · ${data.gym.status}`;
-  document.getElementById("gymDetailExportBtn").href = `/api/gyms/${gymId}/export`;
+  document.getElementById("gymDetailExportBtn").onclick = async (e) => {
+    e.preventDefault();
+    const btn = document.getElementById("gymDetailExportBtn");
+    const original = btn.textContent;
+    btn.textContent = "Exporting…";
+    try {
+      const res = await fetch(`/api/gyms/${gymId}/export`, { headers: DevAPI.headers() });
+      if (res.status === 401) return showLogin();
+      if (!res.ok) throw new Error("Export failed (" + res.status + ")");
+      const blob = await res.blob();
+      const disposition = res.headers.get("Content-Disposition") || "";
+      const match = disposition.match(/filename=([^;]+)/);
+      const filename = match ? match[1].trim() : `${data.gym.slug || "gym"}_members.xlsx`;
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      alert(err.message);
+    } finally {
+      btn.textContent = original;
+    }
+  };
   document.getElementById("gymDetailLinkBtn").onclick = () => { window.location.hash = "#links"; };
 
   const mBody = document.getElementById("membersBody");
   mBody.innerHTML = "";
+  const paymentsByMember = {};
+  (data.payments || []).forEach(p => {
+    if (!p.member_id) return;
+    if (!paymentsByMember[p.member_id] || new Date(p.created_at) > new Date(paymentsByMember[p.member_id].created_at)) {
+      paymentsByMember[p.member_id] = p;
+    }
+  });
   (data.members || []).forEach(m => {
+    const lastPay = paymentsByMember[m.id];
     mBody.innerHTML += `<tr>
       <td>${m.name}</td><td>${m.phone || "—"}</td>
       <td style="font-family:monospace;">${m.login_code}</td>
-      <td><span class="badge ${m.membership_status === 'Active' ? 'active' : 'suspended'}">${m.membership_status}</span></td>
-      <td>${m.current_month_payment_status}</td>
+      <td><span class="badge ${m.status}">${m.status || "—"}</span></td>
+      <td>${lastPay ? "₹" + (parseFloat(lastPay.amount) || 0).toLocaleString("en-IN") + " on " + new Date(lastPay.created_at).toLocaleDateString() : "No payments yet"}</td>
       <td>${m.expiry_date || "—"}</td>
     </tr>`;
   });
@@ -908,12 +959,12 @@ async function loadGymDetail(gymId) {
   pBody.innerHTML = "";
   (data.payments || []).forEach(p => {
     pBody.innerHTML += `<tr>
-      <td>${p.member_name || "—"}</td><td>₹${p.amount}</td><td>${p.plan}</td>
-      <td>${p.payment_method}</td><td>${new Date(p.created_at).toLocaleDateString()}</td>
+      <td>${p.member_name || "—"}</td><td>₹${(parseFloat(p.amount) || 0).toLocaleString("en-IN")}</td><td>${p.method || "—"}</td>
+      <td>${p.created_at ? new Date(p.created_at).toLocaleDateString() : "—"}</td>
     </tr>`;
   });
   if (!data.payments || !data.payments.length) {
-    pBody.innerHTML = `<tr><td colspan="5" style="color:var(--muted)">No payments recorded yet.</td></tr>`;
+    pBody.innerHTML = `<tr><td colspan="4" style="color:var(--muted)">No payments recorded yet.</td></tr>`;
   }
 }
 

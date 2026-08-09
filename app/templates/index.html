@@ -326,8 +326,51 @@ tr:hover td { background:rgba(139,92,246,.04); }
         <!-- ============ VIEW: AI TESTING ============ -->
         <div class="view" id="view-ai_testing">
           <h1>Direct AI Engine Test</h1>
-          <p class="page-sub">Hit the workout/diet generator directly with a raw profile — bypass the member flow to debug engine changes.</p>
+          <p class="page-sub">Hit the workout/diet generator directly — no member login, no gym needed. Two modes below.</p>
+
           <div class="card">
+            <div class="card-head"><h3>Full Generation Preview</h3></div>
+            <p class="page-sub" style="margin-top:-6px">
+              Runs the real production pipeline (same as a real member gets, Trainer Review LLM pass included) against a fixed internal Dev QA account. Rendered exactly as a member would see it — use this to assess and iterate on actual output quality.
+            </p>
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+              <div><label class="lbl">Age</label><input id="fg_age" type="number" value="24" /></div>
+              <div><label class="lbl">Gender</label>
+                <select id="fg_gender"><option>Male</option><option>Female</option></select>
+              </div>
+              <div><label class="lbl">Height (cm)</label><input id="fg_height" type="number" value="175" /></div>
+              <div><label class="lbl">Weight (kg)</label><input id="fg_weight" type="number" value="72" /></div>
+              <div><label class="lbl">Target weight (kg)</label><input id="fg_target" type="number" placeholder="optional" /></div>
+              <div><label class="lbl">Goal</label>
+                <select id="fg_goal">
+                  <option>Fat loss</option><option>Muscle gain</option>
+                  <option>Strength building</option><option>Body recomposition</option>
+                </select>
+              </div>
+              <div><label class="lbl">Experience</label>
+                <select id="fg_experience"><option>Beginner</option><option selected>Intermediate</option><option>Advanced</option></select>
+              </div>
+              <div><label class="lbl">Days per week</label><input id="fg_days" type="number" value="4" /></div>
+              <div><label class="lbl">Equipment</label><input id="fg_equipment" value="full gym" /></div>
+              <div><label class="lbl">Diet preference</label>
+                <select id="fg_diet"><option>Non-vegetarian</option><option>Vegetarian</option><option>Vegan</option><option>Eggetarian</option></select>
+              </div>
+              <div><label class="lbl">Dev QA slot</label>
+                <select id="fg_slot"><option value="1">Slot 1</option><option value="2">Slot 2</option><option value="3">Slot 3</option></select>
+              </div>
+            </div>
+            <button class="btn" style="margin-top:14px;" id="runFullTestBtn">Generate Full Plan</button>
+            <span id="fullTestStatus" class="page-sub" style="margin-left:10px;"></span>
+          </div>
+
+          <div class="card" id="fullTestOutputCard" style="display:none">
+            <div class="card-head"><h3>Rendered Output</h3></div>
+            <iframe id="fullTestFrame" style="width:100%; min-height:80vh; border:1px solid var(--border); border-radius:8px;"></iframe>
+          </div>
+
+          <div class="card">
+            <div class="card-head"><h3>Quick Engine Test (deterministic only)</h3></div>
+            <p class="page-sub" style="margin-top:-6px">Bypasses the LLM entirely — raw split_engine/programming_rules output as JSON. Useful for debugging engine logic changes fast, not for judging real plan quality (use Full Generation Preview above for that).</p>
             <label>Test Profile (JSON)</label>
             <textarea id="profileInput" rows="12" style="font-family:monospace; font-size:12.5px;">{
   "age": 24,
@@ -700,6 +743,51 @@ document.getElementById("generateLinkBtn").addEventListener("click", async () =>
 document.getElementById("linkCopyBtn").addEventListener("click", () => {
   navigator.clipboard.writeText(document.getElementById("linkText").textContent);
   toast("Link copied");
+});
+
+// ── AI TESTING — full generation preview ────────────────────
+document.getElementById("runFullTestBtn").addEventListener("click", async () => {
+  const btn = document.getElementById("runFullTestBtn");
+  const status = document.getElementById("fullTestStatus");
+  const card = document.getElementById("fullTestOutputCard");
+  const frame = document.getElementById("fullTestFrame");
+  btn.disabled = true;
+  status.textContent = "Generating… (real LLM pass, usually 10-30s)";
+  try {
+    const profile = {
+      age: document.getElementById("fg_age").value,
+      gender: document.getElementById("fg_gender").value,
+      height: document.getElementById("fg_height").value,
+      weight: document.getElementById("fg_weight").value,
+      target: document.getElementById("fg_target").value,
+      goal: document.getElementById("fg_goal").value,
+      experience: document.getElementById("fg_experience").value,
+      days: document.getElementById("fg_days").value,
+      equipment: document.getElementById("fg_equipment").value,
+      diet: document.getElementById("fg_diet").value,
+    };
+    const slot = document.getElementById("fg_slot").value;
+
+    const res = await fetch("/api/ai-testing/run-full", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...DevAPI.headers() },
+      body: JSON.stringify({ profile, slot }),
+    });
+    if (res.status === 401) return showLogin();
+    const html = await res.text();
+    if (!res.ok) {
+      let detail = html;
+      try { detail = JSON.parse(html).detail || html; } catch (_) {}
+      throw new Error(detail);
+    }
+    frame.srcdoc = html;
+    card.style.display = "block";
+    status.textContent = "✓ Done";
+  } catch (err) {
+    status.textContent = "✗ " + err.message;
+  } finally {
+    btn.disabled = false;
+  }
 });
 
 // ── AI TESTING ───────────────────────────────────────────────

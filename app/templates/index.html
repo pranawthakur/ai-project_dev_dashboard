@@ -745,6 +745,24 @@ document.getElementById("linkCopyBtn").addEventListener("click", () => {
   toast("Link copied");
 });
 
+// ── AI TESTING — catch the background "exercise safety check finished"
+// update. The plan HTML running inside fullTestFrame polls
+// /api/plan-workout-status itself and, once Trainer Review's background
+// pass completes, posts the updated HTML up via window.postMessage
+// (fitforge:planUpdated) instead of trying to replace its own document
+// from inside itself — same hand-off the real member app's result.html
+// already relies on. Without this listener that message was just being
+// dropped, which is why the "Finalizing your exercise list" placeholder
+// never cleared even after the backend had actually finished.
+window.addEventListener("message", (event) => {
+  const data = event.data;
+  if (!data || data.type !== "fitforge:planUpdated" || typeof data.html !== "string") return;
+  const frame = document.getElementById("fullTestFrame");
+  const status = document.getElementById("fullTestStatus");
+  if (frame) frame.srcdoc = data.html;
+  if (status) status.textContent = "✓ Done";
+});
+
 // ── AI TESTING — full generation preview ────────────────────
 document.getElementById("runFullTestBtn").addEventListener("click", async () => {
   const btn = document.getElementById("runFullTestBtn");
@@ -792,7 +810,7 @@ document.getElementById("runFullTestBtn").addEventListener("click", async () => 
     if (memberToken) localStorage.setItem("memberToken", memberToken);
     frame.srcdoc = html;
     card.style.display = "block";
-    status.textContent = "✓ Done";
+    status.textContent = "✓ Done — exercise safety check may still be finishing in the background";
   } catch (err) {
     status.textContent = "✗ " + err.message;
   } finally {

@@ -780,6 +780,16 @@ document.getElementById("runFullTestBtn").addEventListener("click", async () => 
       try { detail = JSON.parse(html).detail || html; } catch (_) {}
       throw new Error(detail);
     }
+    // The rendered plan's own embedded scripts (the "finalizing your
+    // exercise list" background poll, workout-feedback, etc) authenticate
+    // with a real member Bearer token from localStorage — normally set by
+    // that member's own login, which never happened here. Seed the token
+    // the backend minted for this Dev QA account BEFORE the iframe's
+    // scripts run, or that poll silently no-ops and the placeholder never
+    // clears. Shared with the iframe since srcdoc inherits this page's
+    // origin/storage.
+    const memberToken = res.headers.get("X-Member-Token");
+    if (memberToken) localStorage.setItem("memberToken", memberToken);
     frame.srcdoc = html;
     card.style.display = "block";
     status.textContent = "✓ Done";

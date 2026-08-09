@@ -95,7 +95,11 @@ async def run_full_test(body: FullTestRequest, _=Depends(get_current_developer))
             )
         if res.status_code >= 400:
             raise HTTPException(status_code=res.status_code, detail=res.text)
-        return HTMLResponse(content=res.text)
+        headers = {}
+        member_token = res.headers.get("X-Member-Token")
+        if member_token:
+            headers["X-Member-Token"] = member_token
+        return HTMLResponse(content=res.text, headers=headers)
     except HTTPException:
         raise
     except Exception as e:

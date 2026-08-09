@@ -69,23 +69,43 @@ def gym_detail(gym_id: str, _=Depends(get_current_developer)):
 @router.get("/members/{member_id}")
 def member_detail(member_id: str, _=Depends(get_current_developer)):
     """One member's own row (their intake/profile fields live directly
-    on this row — whatever the signup form wrote) plus a lightweight
-    list of every plan they've ever been generated (metadata only, not
-    the full rendered HTML — open a specific plan via /plans/{id} for
-    that, since rendered_html can be large)."""
+    on this row — whatever the signup form wrote) plus every plan
+    they've ever been generated, each with its full week-by-week
+    workout breakdown (day_index 0-6 = week 1, 7-13 = week 2 — plans
+    are biweekly, see expand_days_to_biweekly in promptgen-backend) and
+    the exact intake form snapshot submitted for that specific cycle.
+    rendered_html is deliberately left out here (can be large per plan,
+    and there can be many plans) — use /plans/{id} for the polished
+    member-facing view of one specific plan."""
     member_res = supabase.table("members").select("*").eq("id", member_id).execute()
     if not member_res.data:
         raise HTTPException(status_code=404, detail="Member not found.")
     member = member_res.data[0]
 
-    plans = (
+    plans_raw = (
         supabase.table("plans")
-        .select("id, cycle_number, status, created_at, valid_until")
+        .select("id, cycle_number, status, created_at, valid_until, plan_json")
         .eq("member_id", member_id)
         .order("cycle_number", desc=True)
         .execute()
         .data
     )
+
+    plans = []
+    for p in plans_raw:
+        plan_json = p.get("plan_json") or {}
+        days = (plan_json.get("workout") or {}).get("days") or []
+        plans.append({
+            "id": p["id"],
+            "cycle_number": p.get("cycle_number"),
+            "status": p.get("status"),
+            "created_at": p.get("created_at"),
+            "valid_until": p.get("valid_until"),
+            "intake": plan_json.get("_intake") or {},
+            "week1_days": days[0:7],
+            "week2_days": days[7:14],
+        })
+
     return {"member": member, "plans": plans}
 
 

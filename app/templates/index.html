@@ -297,11 +297,8 @@ tr:hover td { background:rgba(139,92,246,.04); }
             <div id="dataMemberProfile" style="color:var(--muted)">Loading…</div>
           </div>
           <div class="card">
-            <div class="card-head"><h3>All Generated Plans</h3></div>
-            <table>
-              <thead><tr><th>Cycle</th><th>Status</th><th>Generated</th><th>Valid Until</th><th></th></tr></thead>
-              <tbody id="dataPlansBody"><tr><td colspan="5" style="color:var(--muted)">Loading…</td></tr></tbody>
-            </table>
+            <div class="card-head"><h3>All Generated Plans — Every Week, With the Form They Filled</h3></div>
+            <div id="dataPlansList" style="color:var(--muted)">Loading…</div>
           </div>
         </div>
 
@@ -749,22 +746,67 @@ async function loadDataMember(memberId) {
       ).join("")}</tbody></table>`
     : "No additional profile fields on this member row.";
 
-  const pBody = document.getElementById("dataPlansBody");
-  pBody.innerHTML = "";
+  const listEl = document.getElementById("dataPlansList");
   if (!data.plans.length) {
-    pBody.innerHTML = `<tr><td colspan="5" style="color:var(--muted)">No plans generated yet.</td></tr>`;
+    listEl.innerHTML = `<p style="color:var(--muted)">No plans generated yet.</p>`;
     return;
   }
   const gymId = window.location.hash.split("/")[1];
-  data.plans.forEach(p => {
-    pBody.innerHTML += `<tr>
-      <td>Cycle ${p.cycle_number ?? "—"}</td>
-      <td><span class="badge ${p.status}">${p.status || "—"}</span></td>
-      <td>${p.created_at ? new Date(p.created_at).toLocaleString() : "—"}</td>
-      <td>${p.valid_until ? new Date(p.valid_until).toLocaleDateString() : "—"}</td>
-      <td><a href="#data/${gymId}/${memberId}/${p.id}" style="color:#c4b5fd; text-decoration:none;">View plan →</a></td>
-    </tr>`;
-  });
+
+  function renderIntakeTable(intake) {
+    const entries = Object.entries(intake || {});
+    if (!entries.length) return `<p style="color:var(--muted); margin:0;">No intake snapshot stored for this cycle.</p>`;
+    return `<table><tbody>${entries.map(([k, v]) =>
+      `<tr><td style="color:var(--muted); width:200px;">${k.replace(/_/g, " ")}</td><td>${v ?? "—"}</td></tr>`
+    ).join("")}</tbody></table>`;
+  }
+
+  function renderWeekTable(days, label) {
+    const withExercises = (days || []).filter(d => !d.is_rest && d.exercises && d.exercises.length);
+    if (!withExercises.length) {
+      return `<p style="color:var(--muted); margin:4px 0 14px;">${label}: no training days recorded.</p>`;
+    }
+    return `
+      <div style="margin:10px 0 4px; font-weight:600; color:var(--fg);">${label}</div>
+      ${withExercises.map(d => `
+        <table style="margin-bottom:10px;">
+          <thead><tr><th colspan="4">${d.name || d.short || "Day"}${d.type ? " — " + d.type : ""}</th></tr>
+          <tr><th>Exercise</th><th>Muscle</th><th>Sets</th><th>Reps</th></tr></thead>
+          <tbody>
+            ${d.exercises.map(ex => `<tr>
+              <td>${ex.name || "—"}</td>
+              <td>${ex.muscle || "—"}</td>
+              <td>${ex.sets ?? "—"}</td>
+              <td>${ex.reps ?? "—"}</td>
+            </tr>`).join("")}
+          </tbody>
+        </table>
+      `).join("")}
+    `;
+  }
+
+  listEl.innerHTML = data.plans.map(p => `
+    <div style="border:1px solid var(--border); border-radius:10px; padding:16px; margin-bottom:16px;">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+        <div>
+          <strong>Cycle ${p.cycle_number ?? "—"}</strong>
+          <span class="badge ${p.status}" style="margin-left:8px;">${p.status || "—"}</span>
+        </div>
+        <div style="color:var(--muted); font-size:12.5px;">
+          Generated ${p.created_at ? new Date(p.created_at).toLocaleString() : "—"}
+          · <a href="#data/${gymId}/${memberId}/${p.id}" style="color:#c4b5fd; text-decoration:none;">View polished plan →</a>
+        </div>
+      </div>
+      <details>
+        <summary style="cursor:pointer; color:var(--muted); font-size:13px;">Intake form for this cycle</summary>
+        <div style="margin-top:8px;">${renderIntakeTable(p.intake)}</div>
+      </details>
+      <div style="margin-top:12px;">
+        ${renderWeekTable(p.week1_days, "Week 1")}
+        ${renderWeekTable(p.week2_days, "Week 2")}
+      </div>
+    </div>
+  `).join("");
 }
 
 // ── DATA EXPLORER — one plan ──────────────────────────────────

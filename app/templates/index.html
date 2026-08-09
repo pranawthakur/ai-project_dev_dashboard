@@ -174,6 +174,7 @@ tr:hover td { background:rgba(139,92,246,.04); }
       <div class="sidebar-section">
         <div class="sec-label">Tools</div>
         <button class="nav-item" data-route="ai_testing"><span class="nav-icon">✦</span> AI Engine Test</button>
+        <button class="nav-item" data-route="data"><span class="nav-icon">☰</span> Data Explorer</button>
       </div>
     </div>
 
@@ -243,6 +244,78 @@ tr:hover td { background:rgba(139,92,246,.04); }
               <thead><tr><th>Member</th><th>Amount</th><th>Plan</th><th>Method</th><th>Date</th></tr></thead>
               <tbody id="paymentsBody"><tr><td colspan="5" style="color:var(--muted)">Loading…</td></tr></tbody>
             </table>
+          </div>
+        </div>
+
+        <!-- ============ VIEW: DATA EXPLORER — all gyms ============ -->
+        <div class="view" id="view-data">
+          <h1>Data Explorer</h1>
+          <p class="page-sub">Every gym, their members, member fees, expenses, and every plan a member has ever been generated — including the intake form they filled in for it.</p>
+          <div class="card">
+            <table>
+              <thead><tr><th>Gym</th><th>Members</th><th>Total Revenue</th><th>Status</th></tr></thead>
+              <tbody id="dataGymsBody"><tr><td colspan="4" style="color:var(--muted)">Loading…</td></tr></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- ============ VIEW: DATA EXPLORER — one gym ============ -->
+        <div class="view" id="view-data_gym">
+          <a href="#data" class="page-sub" style="display:inline-block; margin-bottom:8px;">← All gyms</a>
+          <h1 id="dataGymName" style="margin-bottom:2px;">Loading…</h1>
+          <div class="card">
+            <div class="card-head"><h3>Members</h3></div>
+            <table>
+              <thead><tr><th>Name</th><th>Phone</th><th>Status</th><th>Expiry</th><th># Plans</th></tr></thead>
+              <tbody id="dataMembersBody"><tr><td colspan="5" style="color:var(--muted)">Loading…</td></tr></tbody>
+            </table>
+          </div>
+          <div class="card">
+            <div class="card-head"><h3>Member Fees (Payments)</h3></div>
+            <table>
+              <thead><tr><th>Member</th><th>Amount</th><th>Method</th><th>Date</th></tr></thead>
+              <tbody id="dataPaymentsBody"><tr><td colspan="4" style="color:var(--muted)">Loading…</td></tr></tbody>
+            </table>
+          </div>
+          <div class="card">
+            <div class="card-head"><h3>Expenses (incl. staff salaries, if tracked as a category here)</h3></div>
+            <p class="page-sub" style="margin-top:-6px">Shown as-is from the expenses table — this dashboard doesn't otherwise manage expenses, so columns are whatever your gym-admin app actually writes.</p>
+            <table>
+              <thead id="dataExpensesHead"><tr><th style="color:var(--muted)">Loading…</th></tr></thead>
+              <tbody id="dataExpensesBody"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- ============ VIEW: DATA EXPLORER — one member ============ -->
+        <div class="view" id="view-data_member">
+          <a href="#" id="dataMemberBackLink" class="page-sub" style="display:inline-block; margin-bottom:8px;">← Back to gym</a>
+          <h1 id="dataMemberName" style="margin-bottom:2px;">Loading…</h1>
+          <p class="page-sub" id="dataMemberMeta"></p>
+          <div class="card">
+            <div class="card-head"><h3>Profile / Intake Fields on File</h3></div>
+            <div id="dataMemberProfile" style="color:var(--muted)">Loading…</div>
+          </div>
+          <div class="card">
+            <div class="card-head"><h3>All Generated Plans</h3></div>
+            <table>
+              <thead><tr><th>Cycle</th><th>Status</th><th>Generated</th><th>Valid Until</th><th></th></tr></thead>
+              <tbody id="dataPlansBody"><tr><td colspan="5" style="color:var(--muted)">Loading…</td></tr></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- ============ VIEW: DATA EXPLORER — one plan ============ -->
+        <div class="view" id="view-data_plan">
+          <a href="#" id="dataPlanBackLink" class="page-sub" style="display:inline-block; margin-bottom:8px;">← Back to member</a>
+          <h1 style="margin-bottom:2px;">Plan — Cycle <span id="dataPlanCycle">…</span></h1>
+          <div class="card">
+            <div class="card-head"><h3>Intake Form They Filled In For This Cycle</h3></div>
+            <div id="dataPlanIntake" style="color:var(--muted)">Loading…</div>
+          </div>
+          <div class="card">
+            <div class="card-head"><h3>Rendered Plan</h3></div>
+            <iframe id="dataPlanFrame" style="width:100%; min-height:80vh; border:1px solid var(--border); border-radius:8px;"></iframe>
           </div>
         </div>
 
@@ -549,11 +622,29 @@ function route() {
     admins: "view-admins",
     links: "view-links",
     ai_testing: "view-ai_testing",
+    data: "view-data",
   };
 
   if (page === "gyms" && param) {
     document.getElementById("view-gym_detail").classList.add("active");
     loadGymDetail(param);
+    return;
+  }
+
+  if (page === "data" && param) {
+    const parts = param.split("/");
+    if (parts.length === 1) {
+      document.getElementById("view-data_gym").classList.add("active");
+      loadDataGym(parts[0]);
+    } else if (parts.length === 2) {
+      document.getElementById("view-data_member").classList.add("active");
+      document.getElementById("dataMemberBackLink").href = `#data/${parts[0]}`;
+      loadDataMember(parts[1]);
+    } else {
+      document.getElementById("view-data_plan").classList.add("active");
+      document.getElementById("dataPlanBackLink").href = `#data/${parts[0]}/${parts[1]}`;
+      loadDataPlan(parts[2]);
+    }
     return;
   }
 
@@ -566,6 +657,132 @@ function route() {
   if (page === "gyms") loadGyms();
   if (page === "admins") loadAdmins();
   if (page === "links") loadGymOptions();
+  if (page === "data") loadDataGyms();
+}
+
+// ── DATA EXPLORER — all gyms ─────────────────────────────────
+async function loadDataGyms() {
+  const gyms = await DevAPI.get("/api/data/gyms");
+  if (!gyms) return;
+  const body = document.getElementById("dataGymsBody");
+  body.innerHTML = "";
+  if (!gyms.length) {
+    body.innerHTML = `<tr><td colspan="4" style="color:var(--muted)">No gyms yet.</td></tr>`;
+    return;
+  }
+  gyms.forEach(g => {
+    body.innerHTML += `<tr>
+      <td><a href="#data/${g.id}" style="color:#c4b5fd; text-decoration:none;">${g.name}</a></td>
+      <td>${g.member_count ?? 0}</td>
+      <td>₹${(g.total_revenue ?? 0).toLocaleString("en-IN")}</td>
+      <td><span class="badge ${g.status}">${g.status}</span></td>
+    </tr>`;
+  });
+}
+
+// ── DATA EXPLORER — one gym ───────────────────────────────────
+async function loadDataGym(gymId) {
+  const data = await DevAPI.get(`/api/data/gyms/${gymId}`);
+  if (!data) return;
+  document.getElementById("dataGymName").textContent = data.gym.name;
+
+  const mBody = document.getElementById("dataMembersBody");
+  mBody.innerHTML = "";
+  if (!data.members.length) {
+    mBody.innerHTML = `<tr><td colspan="5" style="color:var(--muted)">No members yet.</td></tr>`;
+  }
+  data.members.forEach(m => {
+    mBody.innerHTML += `<tr>
+      <td><a href="#data/${gymId}/${m.id}" style="color:#c4b5fd; text-decoration:none;">${m.name || "—"}</a></td>
+      <td>${m.phone || "—"}</td>
+      <td><span class="badge ${m.status}">${m.status || "—"}</span></td>
+      <td>${m.expiry_date || "—"}</td>
+      <td>${m.plan_count ?? 0}</td>
+    </tr>`;
+  });
+
+  const pBody = document.getElementById("dataPaymentsBody");
+  pBody.innerHTML = "";
+  if (!data.payments.length) {
+    pBody.innerHTML = `<tr><td colspan="4" style="color:var(--muted)">No payments yet.</td></tr>`;
+  }
+  data.payments.forEach(p => {
+    pBody.innerHTML += `<tr>
+      <td>${p.member_name || "—"}</td>
+      <td>₹${(parseFloat(p.amount) || 0).toLocaleString("en-IN")}</td>
+      <td>${p.method || "—"}</td>
+      <td>${p.created_at ? new Date(p.created_at).toLocaleDateString() : "—"}</td>
+    </tr>`;
+  });
+
+  // Expenses columns aren't known ahead of time (this dashboard doesn't
+  // otherwise touch that table) — render whatever keys actually come back.
+  const eHead = document.getElementById("dataExpensesHead");
+  const eBody = document.getElementById("dataExpensesBody");
+  if (!data.expenses.length) {
+    eHead.innerHTML = `<tr><th style="color:var(--muted)">No expenses on file</th></tr>`;
+    eBody.innerHTML = "";
+  } else {
+    const cols = Object.keys(data.expenses[0]).filter(k => k !== "id" && k !== "gym_id");
+    eHead.innerHTML = "<tr>" + cols.map(c => `<th>${c.replace(/_/g, " ")}</th>`).join("") + "</tr>";
+    eBody.innerHTML = data.expenses.map(row =>
+      "<tr>" + cols.map(c => `<td>${row[c] ?? "—"}</td>`).join("") + "</tr>"
+    ).join("");
+  }
+}
+
+// ── DATA EXPLORER — one member ────────────────────────────────
+async function loadDataMember(memberId) {
+  const data = await DevAPI.get(`/api/data/members/${memberId}`);
+  if (!data) return;
+  const m = data.member;
+  document.getElementById("dataMemberName").textContent = m.name || "Member";
+  document.getElementById("dataMemberMeta").textContent =
+    `${m.phone || "—"} · login code ${m.login_code || "—"} · ${m.status || "—"}`;
+
+  const profileEl = document.getElementById("dataMemberProfile");
+  const skip = new Set(["id", "gym_id", "name", "login_code", "status"]);
+  const entries = Object.entries(m).filter(([k]) => !skip.has(k));
+  profileEl.innerHTML = entries.length
+    ? `<table><tbody>${entries.map(([k, v]) =>
+        `<tr><td style="color:var(--muted); width:220px;">${k.replace(/_/g, " ")}</td><td>${v ?? "—"}</td></tr>`
+      ).join("")}</tbody></table>`
+    : "No additional profile fields on this member row.";
+
+  const pBody = document.getElementById("dataPlansBody");
+  pBody.innerHTML = "";
+  if (!data.plans.length) {
+    pBody.innerHTML = `<tr><td colspan="5" style="color:var(--muted)">No plans generated yet.</td></tr>`;
+    return;
+  }
+  const gymId = window.location.hash.split("/")[1];
+  data.plans.forEach(p => {
+    pBody.innerHTML += `<tr>
+      <td>Cycle ${p.cycle_number ?? "—"}</td>
+      <td><span class="badge ${p.status}">${p.status || "—"}</span></td>
+      <td>${p.created_at ? new Date(p.created_at).toLocaleString() : "—"}</td>
+      <td>${p.valid_until ? new Date(p.valid_until).toLocaleDateString() : "—"}</td>
+      <td><a href="#data/${gymId}/${memberId}/${p.id}" style="color:#c4b5fd; text-decoration:none;">View plan →</a></td>
+    </tr>`;
+  });
+}
+
+// ── DATA EXPLORER — one plan ──────────────────────────────────
+async function loadDataPlan(planId) {
+  const data = await DevAPI.get(`/api/data/plans/${planId}`);
+  if (!data) return;
+  document.getElementById("dataPlanCycle").textContent = data.cycle_number ?? "—";
+
+  const intakeEl = document.getElementById("dataPlanIntake");
+  const entries = Object.entries(data.intake || {});
+  intakeEl.innerHTML = entries.length
+    ? `<table><tbody>${entries.map(([k, v]) =>
+        `<tr><td style="color:var(--muted); width:220px;">${k.replace(/_/g, " ")}</td><td>${v ?? "—"}</td></tr>`
+      ).join("")}</tbody></table>`
+    : "No intake snapshot stored on this plan.";
+
+  const frame = document.getElementById("dataPlanFrame");
+  frame.srcdoc = data.rendered_html || "<p style='color:#888;font-family:sans-serif;padding:20px;'>No rendered HTML stored for this plan.</p>";
 }
 
 // ── DASHBOARD ────────────────────────────────────────────────

@@ -5,7 +5,7 @@ load_dotenv()  # must run before app.core.config reads os.getenv(...)
 from fastapi import FastAPI
 from starlette.middleware.cors import CORSMiddleware
 
-from app.routers import pages, auth, gyms, onboarding, admins, analytics, links, ai_testing
+from app.routers import pages, auth, gyms, onboarding, admins, analytics, links, ai_testing, data_explorer
 
 app = FastAPI(title="GymCoach Studio — Dev Console")
 
@@ -31,6 +31,7 @@ app.include_router(admins.router)
 app.include_router(analytics.router)
 app.include_router(links.router)
 app.include_router(ai_testing.router)
+app.include_router(data_explorer.router)
 
 
 @app.get("/health")

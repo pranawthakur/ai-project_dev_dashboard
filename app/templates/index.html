@@ -671,9 +671,14 @@ async function loadDataGyms() {
       return;
     }
     gyms.forEach(g => {
+      const isTrial = g.subscription_status === "trial";
+      const count = g.member_count ?? 0;
+      const memberCell = isTrial
+        ? `<span style="color:${count >= 30 ? '#f87171' : count >= 25 ? '#fbbf24' : 'inherit'}">${count} / 30 (trial)</span>`
+        : count;
       body.innerHTML += `<tr>
         <td><a href="#data/${g.id}" style="color:#c4b5fd; text-decoration:none;">${g.name}</a></td>
-        <td>${g.member_count ?? 0}</td>
+        <td>${memberCell}</td>
         <td>₹${(g.total_revenue ?? 0).toLocaleString("en-IN")}</td>
         <td><span class="badge ${g.status}">${g.status}</span></td>
       </tr>`;

@@ -172,6 +172,11 @@ tr:hover td { background:rgba(139,92,246,.04); }
         <button class="nav-item" data-route="admins"><span class="nav-icon">◐</span> Gym Admins</button>
       </div>
       <div class="sidebar-section">
+        <div class="sec-label">Payments</div>
+        <button class="nav-item" data-route="payments"><span class="nav-icon">₹</span> Razorpay & Channel</button>
+        <button class="nav-item" data-route="plans"><span class="nav-icon">▤</span> Plans Catalog</button>
+      </div>
+      <div class="sidebar-section">
         <div class="sec-label">Tools</div>
         <button class="nav-item" data-route="ai_testing"><span class="nav-icon">✦</span> AI Engine Test</button>
         <button class="nav-item" data-route="data"><span class="nav-icon">☰</span> Data Explorer</button>
@@ -389,6 +394,103 @@ tr:hover td { background:rgba(139,92,246,.04); }
                 <button class="btn secondary" style="padding:6px 12px; font-size:12px;" id="linkCopyBtn">Copy</button>
               </div>
               <p class="page-sub" style="margin-top:10px;">Share this with the gym admin — it routes members straight to the member login/questionnaire for their gym.</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- ============ VIEW: PAYMENTS (Razorpay + Channel) ============ -->
+        <div class="view" id="view-payments">
+          <h1>Razorpay & Notification Channel</h1>
+          <p class="page-sub">Per-gym Razorpay credentials and which channel (Email or WhatsApp) that gym's automated messages go out on.</p>
+          <div class="card" style="max-width:640px;">
+            <label>Select Gym</label>
+            <select id="paymentsGymSelect"></select>
+          </div>
+
+          <div id="paymentsConfigArea" style="display:none;">
+            <div class="card" style="max-width:640px;">
+              <div class="card-head">
+                <h3>Notification Channel</h3>
+                <span class="badge" id="channelBadge">—</span>
+              </div>
+              <p class="page-sub" style="margin-top:-8px;">Email needs no approval and can go live immediately. WhatsApp needs Meta template approval (1-2 days, first time only) before automated sends work.</p>
+              <label><input type="radio" name="channel" value="email" id="channelEmail"> Free Email — reuses the platform SMTP settings</label><br/>
+              <label><input type="radio" name="channel" value="whatsapp" id="channelWhatsapp"> Twilio WhatsApp — gym bears the cost (billed outside this app)</label>
+
+              <div id="twilioSidFields" style="display:none; margin-top:14px; padding-top:14px; border-top:1px solid var(--border, #333);">
+                <p class="page-sub" style="margin-top:0;">Approved Twilio Content SIDs for this gym (one per message type — see <code>app/messaging.py</code> in the gym-dashboard repo for the exact approved template body each one must match). Leave a field blank to keep whatever is already saved; that message type is skipped until it's filled in.</p>
+                <label>Welcome / first-payment receipt (ContentSid)</label>
+                <input type="text" id="sidWelcome" placeholder="HX..." />
+                <label>T-3 renewal reminder (ContentSid)</label>
+                <input type="text" id="sidReminderT3" placeholder="HX..." />
+                <label>T0 expiry notice (ContentSid)</label>
+                <input type="text" id="sidExpiryT0" placeholder="HX..." />
+                <label>T+15 final / suspension notice (ContentSid)</label>
+                <input type="text" id="sidFinalT15" placeholder="HX..." />
+              </div>
+
+              <button class="btn secondary" style="margin-top:14px;" id="saveChannelBtn">Save Channel</button>
+            </div>
+
+            <div class="card" style="max-width:640px;">
+              <div class="card-head">
+                <h3>Razorpay Credentials</h3>
+                <span class="badge" id="razorpayStatusBadge">—</span>
+                <span class="badge" id="razorpayKeyHealthBadge" title="Set by the daily key-health check (Phase 6) — see key_status_detail" style="display:none;">—</span>
+              </div>
+              <p class="page-sub" style="margin-top:-8px;">Keys are test-called against Razorpay before saving, then encrypted at rest. Re-saving rotates the stored credentials.</p>
+              <p class="page-sub" id="razorpayKeyHealthDetail" style="margin-top:-8px; display:none;"></p>
+              <label>Key ID *</label>
+              <input type="text" id="razorpayKeyId" placeholder="rzp_live_..." />
+              <label>Key Secret *</label>
+              <input type="password" id="razorpayKeySecret" placeholder="Required every save — re-verified against Razorpay each time" autocomplete="new-password" />
+              <label>Webhook Secret</label>
+              <input type="password" id="razorpayWebhookSecret" placeholder="From this gym's Razorpay dashboard → Webhooks" autocomplete="new-password" />
+              <button class="btn" style="margin-top:16px;" id="saveRazorpayBtn">Save & Verify</button>
+              <p id="razorpayErr" style="color:var(--danger); font-size:13px; margin-top:12px; display:none;"></p>
+              <p id="razorpayOk" style="color:var(--success); font-size:13px; margin-top:12px; display:none;">✔ Verified with Razorpay and saved.</p>
+            </div>
+
+            <div class="card" style="max-width:640px;">
+              <div class="card-head"><h3>Webhook URL — paste into this gym's Razorpay dashboard</h3></div>
+              <p class="page-sub" style="margin-top:-8px;">Razorpay → Settings → Webhooks → Add New Webhook, on this gym's own Razorpay account (each gym owns their account, so this is a one-time manual step per gym — see build-plan-v2.md §2.4).</p>
+              <div class="link-box">
+                <code id="webhookUrlText">—</code>
+                <button class="btn secondary" style="padding:6px 12px; font-size:12px;" id="webhookCopyBtn">Copy</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ============ VIEW: PLANS CATALOG ============ -->
+        <div class="view" id="view-plans">
+          <h1>Plans Catalog</h1>
+          <p class="page-sub">Each gym's own membership plans — what the member-facing "Pay Now" picker reads from and what Razorpay Payment Links are priced against.</p>
+          <div class="card" style="max-width:760px;">
+            <label>Select Gym</label>
+            <select id="plansGymSelect"></select>
+          </div>
+
+          <div id="plansArea" style="display:none;">
+            <div class="card" style="max-width:760px;">
+              <div class="card-head"><h3>Plans</h3></div>
+              <table>
+                <thead><tr><th>Name</th><th>Duration</th><th>Price</th><th>Status</th><th>Actions</th></tr></thead>
+                <tbody id="plansBody"><tr><td colspan="5" style="color:var(--muted)">Select a gym above.</td></tr></tbody>
+              </table>
+            </div>
+            <div class="card" style="max-width:760px;">
+              <div class="card-head"><h3>Add Plan</h3></div>
+              <form id="addPlanForm">
+                <label>Plan Name *</label>
+                <input type="text" id="planName" placeholder="e.g. Annual" required />
+                <label>Duration (months) *</label>
+                <input type="number" id="planDuration" min="1" required />
+                <label>Price (₹) *</label>
+                <input type="number" id="planPrice" min="0" step="0.01" required />
+                <button class="btn" type="submit" style="margin-top:16px;">Add Plan</button>
+              </form>
+              <p id="planErr" style="color:var(--danger); font-size:13px; margin-top:12px; display:none;"></p>
             </div>
           </div>
         </div>
@@ -622,6 +724,8 @@ function route() {
     links: "view-links",
     ai_testing: "view-ai_testing",
     data: "view-data",
+    payments: "view-payments",
+    plans: "view-plans",
   };
 
   if (page === "gyms" && param) {
@@ -657,6 +761,8 @@ function route() {
   if (page === "admins") loadAdmins();
   if (page === "links") loadGymOptions();
   if (page === "data") loadDataGyms();
+  if (page === "payments") loadPaymentsGymOptions();
+  if (page === "plans") loadPlansGymOptions();
 }
 
 // ── DATA EXPLORER — all gyms ─────────────────────────────────
@@ -1061,6 +1167,233 @@ document.getElementById("linkCopyBtn").addEventListener("click", () => {
   navigator.clipboard.writeText(document.getElementById("linkText").textContent);
   toast("Link copied");
 });
+
+// ── PAYMENTS (Razorpay + Channel) ─────────────────────────────
+async function loadPaymentsGymOptions() {
+  const gyms = await DevAPI.get("/api/gyms");
+  if (!gyms) return;
+  const sel = document.getElementById("paymentsGymSelect");
+  sel.innerHTML = `<option value="">— Select a gym —</option>` + gyms.map(g => `<option value="${g.id}">${g.name}</option>`).join("");
+  document.getElementById("paymentsConfigArea").style.display = "none";
+}
+document.getElementById("paymentsGymSelect").addEventListener("change", (e) => {
+  const gymId = e.target.value;
+  if (!gymId) { document.getElementById("paymentsConfigArea").style.display = "none"; return; }
+  loadPaymentConfig(gymId);
+});
+async function loadPaymentConfig(gymId) {
+  try {
+    const data = await DevAPI.get(`/api/payment-config/${gymId}`);
+    if (!data) return;
+    document.getElementById("paymentsConfigArea").style.display = "block";
+    document.getElementById("paymentsConfigArea").dataset.gymId = gymId;
+
+    const badge = document.getElementById("razorpayStatusBadge");
+    badge.textContent = data.configured && data.is_active ? "Configured" : "Not configured";
+    badge.className = "badge " + (data.configured && data.is_active ? "active" : "suspended");
+
+    document.getElementById("razorpayKeyId").value = data.razorpay_key_id || "";
+    document.getElementById("razorpayKeySecret").value = "";
+    document.getElementById("razorpayWebhookSecret").value = "";
+    document.getElementById("razorpayErr").style.display = "none";
+    document.getElementById("razorpayOk").style.display = "none";
+
+    document.getElementById("webhookUrlText").textContent = data.webhook_url;
+
+    // Phase 6 — daily key-health check result, if one has run yet.
+    const healthBadge = document.getElementById("razorpayKeyHealthBadge");
+    const healthDetail = document.getElementById("razorpayKeyHealthDetail");
+    if (data.key_status && data.key_status !== "unknown") {
+      healthBadge.style.display = "inline-block";
+      healthBadge.textContent = data.key_status === "valid" ? "Keys OK" : "Keys BROKEN";
+      healthBadge.className = "badge " + (data.key_status === "valid" ? "active" : "suspended");
+      if (data.key_status === "invalid" && data.key_status_detail) {
+        healthDetail.style.display = "block";
+        healthDetail.textContent = "Last check: " + data.key_status_detail +
+          (data.key_status_checked_at ? " (" + data.key_status_checked_at + ")" : "");
+      } else {
+        healthDetail.style.display = "none";
+      }
+    } else {
+      healthBadge.style.display = "none";
+      healthDetail.style.display = "none";
+    }
+
+    const channelBadge = document.getElementById("channelBadge");
+    channelBadge.textContent = data.notification_channel === "whatsapp" ? "WhatsApp" : "Email";
+    document.getElementById("channelEmail").checked = data.notification_channel !== "whatsapp";
+    document.getElementById("channelWhatsapp").checked = data.notification_channel === "whatsapp";
+
+    document.getElementById("sidWelcome").value = data.twilio_content_sid_welcome || "";
+    document.getElementById("sidReminderT3").value = data.twilio_content_sid_reminder_t3 || "";
+    document.getElementById("sidExpiryT0").value = data.twilio_content_sid_expiry_t0 || "";
+    document.getElementById("sidFinalT15").value = data.twilio_content_sid_final_t15 || "";
+    document.getElementById("twilioSidFields").style.display =
+      data.notification_channel === "whatsapp" ? "block" : "none";
+  } catch (err) {
+    toast("Failed to load: " + err.message);
+  }
+}
+document.querySelectorAll('input[name="channel"]').forEach((el) => {
+  el.addEventListener("change", (e) => {
+    document.getElementById("twilioSidFields").style.display =
+      e.target.value === "whatsapp" ? "block" : "none";
+  });
+});
+document.getElementById("saveChannelBtn").addEventListener("click", async () => {
+  const gymId = document.getElementById("paymentsConfigArea").dataset.gymId;
+  if (!gymId) return;
+  const channel = document.querySelector('input[name="channel"]:checked')?.value || "email";
+  // Content SID fields are sent only when non-empty — a blank field means
+  // "leave whatever is already saved alone" (see payment_config.py), not
+  // "clear it", so partial saves across multiple visits are safe.
+  const body = { notification_channel: channel };
+  const sidWelcome = document.getElementById("sidWelcome").value.trim();
+  const sidT3 = document.getElementById("sidReminderT3").value.trim();
+  const sidT0 = document.getElementById("sidExpiryT0").value.trim();
+  const sidT15 = document.getElementById("sidFinalT15").value.trim();
+  if (sidWelcome) body.twilio_content_sid_welcome = sidWelcome;
+  if (sidT3) body.twilio_content_sid_reminder_t3 = sidT3;
+  if (sidT0) body.twilio_content_sid_expiry_t0 = sidT0;
+  if (sidT15) body.twilio_content_sid_final_t15 = sidT15;
+  try {
+    await DevAPI.put(`/api/messaging-config/${gymId}`, body);
+    toast("Channel saved");
+    loadPaymentConfig(gymId);
+  } catch (err) {
+    toast("Failed to save channel: " + err.message);
+  }
+});
+document.getElementById("saveRazorpayBtn").addEventListener("click", async () => {
+  const gymId = document.getElementById("paymentsConfigArea").dataset.gymId;
+  if (!gymId) return;
+  const errEl = document.getElementById("razorpayErr");
+  const okEl = document.getElementById("razorpayOk");
+  errEl.style.display = "none";
+  okEl.style.display = "none";
+  const keyId = document.getElementById("razorpayKeyId").value.trim();
+  const keySecret = document.getElementById("razorpayKeySecret").value.trim();
+  const webhookSecret = document.getElementById("razorpayWebhookSecret").value.trim();
+  if (!keyId || !keySecret) {
+    errEl.textContent = "Key ID and Key Secret are both required to save/verify.";
+    errEl.style.display = "block";
+    return;
+  }
+  const btn = document.getElementById("saveRazorpayBtn");
+  const original = btn.textContent;
+  btn.disabled = true;
+  btn.textContent = "Verifying with Razorpay…";
+  try {
+    await DevAPI.put(`/api/payment-config/${gymId}`, {
+      razorpay_key_id: keyId,
+      razorpay_key_secret: keySecret,
+      razorpay_webhook_secret: webhookSecret,
+    });
+    okEl.style.display = "block";
+    toast("Razorpay credentials verified and saved");
+    loadPaymentConfig(gymId);
+  } catch (err) {
+    errEl.textContent = err.message;
+    errEl.style.display = "block";
+  } finally {
+    btn.disabled = false;
+    btn.textContent = original;
+  }
+});
+document.getElementById("webhookCopyBtn").addEventListener("click", () => {
+  navigator.clipboard.writeText(document.getElementById("webhookUrlText").textContent);
+  toast("Webhook URL copied");
+});
+
+// ── PLANS CATALOG ────────────────────────────────────────────
+async function loadPlansGymOptions() {
+  const gyms = await DevAPI.get("/api/gyms");
+  if (!gyms) return;
+  const sel = document.getElementById("plansGymSelect");
+  sel.innerHTML = `<option value="">— Select a gym —</option>` + gyms.map(g => `<option value="${g.id}">${g.name}</option>`).join("");
+  document.getElementById("plansArea").style.display = "none";
+}
+document.getElementById("plansGymSelect").addEventListener("change", (e) => {
+  const gymId = e.target.value;
+  if (!gymId) { document.getElementById("plansArea").style.display = "none"; return; }
+  document.getElementById("plansArea").style.display = "block";
+  document.getElementById("plansArea").dataset.gymId = gymId;
+  loadPlans(gymId);
+});
+async function loadPlans(gymId) {
+  const body = document.getElementById("plansBody");
+  body.innerHTML = `<tr><td colspan="5" style="color:var(--muted)">Loading…</td></tr>`;
+  try {
+    const plans = await DevAPI.get(`/api/plans/${gymId}`);
+    if (!plans) return;
+    if (!plans.length) {
+      body.innerHTML = `<tr><td colspan="5" style="color:var(--muted)">No plans yet — add one below.</td></tr>`;
+      return;
+    }
+    body.innerHTML = "";
+    plans.forEach(p => {
+      body.innerHTML += `<tr>
+        <td>${p.name}</td>
+        <td>${p.duration_months} mo</td>
+        <td>₹${Number(p.price).toLocaleString("en-IN")}</td>
+        <td><span class="badge ${p.is_active ? "active" : "suspended"}">${p.is_active ? "Active" : "Inactive"}</span></td>
+        <td>
+          <button class="btn secondary" style="padding:6px 12px; font-size:12px;" onclick="editPlan('${p.id}', ${JSON.stringify(p.name).replace(/"/g, '&quot;')}, ${p.duration_months}, ${p.price})">Edit</button>
+          <button class="btn secondary" style="padding:6px 12px; font-size:12px;" onclick="togglePlanStatus('${p.id}', '${gymId}', ${p.is_active})">${p.is_active ? "Deactivate" : "Activate"}</button>
+        </td>
+      </tr>`;
+    });
+  } catch (err) {
+    body.innerHTML = `<tr><td colspan="5" style="color:#f87171">Failed to load: ${err.message}</td></tr>`;
+  }
+}
+document.getElementById("addPlanForm").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const gymId = document.getElementById("plansArea").dataset.gymId;
+  if (!gymId) return;
+  const errEl = document.getElementById("planErr");
+  errEl.style.display = "none";
+  const payload = {
+    name: document.getElementById("planName").value,
+    duration_months: Number(document.getElementById("planDuration").value),
+    price: Number(document.getElementById("planPrice").value),
+  };
+  try {
+    await DevAPI.post(`/api/plans/${gymId}`, payload);
+    document.getElementById("addPlanForm").reset();
+    toast("Plan added");
+    loadPlans(gymId);
+  } catch (err) {
+    errEl.textContent = err.message;
+    errEl.style.display = "block";
+  }
+});
+async function editPlan(planId, currentName, currentDuration, currentPrice) {
+  const name = prompt("Plan name:", currentName);
+  if (name === null) return;
+  const duration = prompt("Duration (months):", currentDuration);
+  if (duration === null) return;
+  const price = prompt("Price (₹):", currentPrice);
+  if (price === null) return;
+  const gymId = document.getElementById("plansArea").dataset.gymId;
+  try {
+    await DevAPI.put(`/api/plans/plan/${planId}`, {
+      name, duration_months: Number(duration), price: Number(price),
+    });
+    toast("Plan updated");
+    loadPlans(gymId);
+  } catch (err) {
+    toast("Failed to update: " + err.message);
+  }
+}
+async function togglePlanStatus(planId, gymId, isActive) {
+  try {
+    await DevAPI.put(`/api/plans/plan/${planId}/status`, { is_active: !isActive });
+    loadPlans(gymId);
+  } catch (err) {
+    toast("Failed to update: " + err.message);
+  }
+}
 
 // ── AI TESTING — catch the background "exercise safety check finished"
 // update. The plan HTML running inside fullTestFrame polls

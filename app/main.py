@@ -5,7 +5,7 @@ load_dotenv()  # must run before app.core.config reads os.getenv(...)
 from fastapi import FastAPI
 from starlette.middleware.cors import CORSMiddleware
 
-from app.routers import pages, auth, gyms, onboarding, admins, analytics, links, ai_testing, data_explorer
+from app.routers import pages, auth, gyms, onboarding, admins, analytics, links, ai_testing, data_explorer, payment_config, plans
 
 app = FastAPI(title="GymCoach Studio — Dev Console")
 
@@ -32,6 +32,8 @@ app.include_router(analytics.router)
 app.include_router(links.router)
 app.include_router(ai_testing.router)
 app.include_router(data_explorer.router)
+app.include_router(payment_config.router)   # Phase 1: Razorpay onboarding + channel toggle
+app.include_router(plans.router)            # Phase 1: Manage Plans catalog
 
 
 @app.get("/health")

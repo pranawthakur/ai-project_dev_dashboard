@@ -18,3 +18,7 @@ services:
         sync: false
       - key: DEV_SIGNUP_SECRET
         sync: false
+      - key: MASTER_ENCRYPTION_KEY
+        sync: false
+      - key: GYM_DASHBOARD_BASE_URL
+        sync: false

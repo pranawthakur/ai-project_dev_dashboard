@@ -73,3 +73,13 @@ def links_page(request: Request):
 @router.get("/ai-testing", response_class=HTMLResponse)
 def ai_testing_page(request: Request):
     return render_index(request)
+
+
+@router.get("/payments", response_class=HTMLResponse)
+def payments_page(request: Request):
+    return render_index(request)
+
+
+@router.get("/plans", response_class=HTMLResponse)
+def plans_page(request: Request):
+    return render_index(request)
